@@ -82,12 +82,21 @@ void addStudent() {
   printf("\n=== Add New Student ===\n");
   printf("Enter ID: ");
   scanf("%d", &s.id);
+  clearInputBuffer();
+
   printf("Enter Name: ");
-  scanf("%[^\n]", &s.name);
+  // scanf("%[^\n]", &s.name);
+  fgets(s.name, sizeof(s.name), stdin); // Input name
+  s.name[strcspn(s.name, "\n")] = '\0'; // Remove newline
+  
   printf("Enter Age: ");
   scanf("%d", &s.age);
+  clearInputBuffer();
+
   printf("Enter Grade: ");
-  scanf("%[^\n]", &s.grade);
+  // scanf("%[^\n]", &s.grade);
+  fgets(s.grade, sizeof(s.grade), stdin); // Input name
+  s.grade[strcspn(s.grade, "\n")] = '\0'; // Remove newline
 
 
   fwrite(&s, sizeof(Student), 1, fp);
@@ -190,11 +199,19 @@ void updateStudent() {
 
       printf("Enter new details for Student ID %d:\n", s.id);
       printf("Enter Name: ");
-      scanf("%[^\n]", &s.name);
+      // scanf("%[^\n]", &s.name);
+      fgets(s.name, sizeof(s.name), stdin); // Input name
+      s.name[strcspn(s.name, "\n")] = '\0'; // Remove newline
+
       printf("Enter Age: ");
       scanf("%d", &s.age);
+      clearInputBuffer();
+
       printf("Enter Grade: ");
-      scanf("%[^\n]", &s.grade);
+      // scanf("%[^\n]", &s.grade);
+      fgets(s.grade, sizeof(s.grade), stdin); // Input name
+      s.grade[strcspn(s.grade, "\n")] = '\0'; // Remove newline
+      
       found = 1;
     }
     fwrite(&s, sizeof(Student), 1, tempFp); // Write each student (updated of not)
@@ -259,4 +276,11 @@ void deleteStudent() {
     remove("temp.dat");
     printf("Student with ID %d not found.\n", searchId);
   }
+}
+
+
+void clearInputBuffer() {
+  int c;
+  // consume all characters until a newline
+  while ((c = getchar()) != '\n' && c != EOF);
 }
