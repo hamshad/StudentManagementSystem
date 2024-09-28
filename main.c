@@ -109,6 +109,7 @@ void addStudent() {
 void viewStudents() {
   FILE *fp;
   Student s;
+  int recordCount = 0; // To count how many records are being read
 
   // Open the file in read mode
   fp = fopen(FILE_NAME, "rb");
@@ -122,8 +123,14 @@ void viewStudents() {
   printf("----------------------------------------\n");
 
   // Read and display student's details one by one from the file
-  while(fread(&s, sizeof(Student), 1, fp)) {
-    printf("%d\t-15s\t%d\t%s\n", s.id, s.name, s.age, s.grade);
+  while(fread(&s, sizeof(Student), 1, fp) == 1) {
+    printf("%d\t%-15s\t%d\t%s\n", s.id, s.name, s.age, s.grade);
+    recordCount++; // Increment the count for each valid record
+  }
+
+
+  if (recordCount == 0) {
+    printf("No records to display.\n");
   }
 
   fclose(fp);
