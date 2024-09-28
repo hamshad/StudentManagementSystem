@@ -155,3 +155,58 @@ void searchStudent() {
 
   fclose(fp);
 }
+
+
+void updateStudent() {
+  FILE *fp, *tempFp; // fp - for main file, tempFp - for temporary file
+  Student s;
+  int searchId;
+  int found = 0;
+
+  fp = fopen(FILE_NAME, "rb");
+  if (fp == NULL) {
+    printf("No student records found.\n");
+    return;
+  }
+
+  // Open temporary file in write mode to store updated data
+  tempFp = fopen("temp.dat", "wb");
+  if (tempFp == NULL) {
+    printf("Error creating temporary file!\n");
+    fclose(fp);
+    return;
+  }
+
+
+  printf("\n=== Update Student ===\n");
+  printf("Enter Student ID to update: \n");
+  scanf("%d", &searchId);
+
+  // Read throuh the original file and copy data to the temporary file
+  while (fread(&s, sizeof(Student), 1, fp)) {
+    if (s.id == searchId) {
+
+      printf("Enter new details for Student ID %d:\n", s.id);
+      printf("Enter Name: ");
+      scanf("%[^\n]", &s.name);
+      printf("Enter Age: ");
+      scanf("%d", &s.age);
+      printf("Enter Grade: ");
+      scanf("%[^\n]", &s.grade);
+      found = 1;
+    }
+    fwrite(&s, sizeof(Student), 1, tempFp); // Write each student (updated of not)
+  }
+
+  fclose(fp);
+  fclose(tempFp);
+
+  if (found) {
+    remove(FILE_NAME);
+    rename("temp.dat", FILE_NAME);
+    printf("Student record updated successfully!\n");
+  } else {
+    remove("temp.dat");
+    printf("Student with ID %d not found.\n", searchId);
+  }
+}
