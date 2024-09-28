@@ -91,7 +91,7 @@ void addStudent() {
   fwrite(&s, sizeof(Student), 1, fp);
   fclose(fp);
 
-  printf(c"Student added successfully!\n");
+  printf("Student added successfully!\n");
 }
 
 
@@ -107,7 +107,7 @@ void viewStudents() {
   }
 
   printf("\n--- List of Students ---\n");
-  printf("ID\tName\t\tAge\tGrade\n"):
+  printf("ID\tName\t\tAge\tGrade\n");
   printf("----------------------------------------\n");
 
   // Read and display student's details one by one from the file
@@ -118,3 +118,7 @@ void viewStudents() {
   fclose(fp);
 }
 
+
+void searchStudent() {
+  FILE *fp;
+}
