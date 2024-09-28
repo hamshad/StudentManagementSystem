@@ -121,4 +121,37 @@ void viewStudents() {
 
 void searchStudent() {
   FILE *fp;
+  Student s;
+  int searchId; // student ID to search for
+  int found = 0; // Flag to indicate whether the student was found
+  
+  fp = fopen(FILE_NAME, "rb");
+  if(fp == NULL) {
+    printf("No student records found.\n");
+    return;
+  }
+
+
+  printf("\n=== Search Student ===\n");
+  printf("Enter Student ID to search: ");
+  scanf("%d", &searchId);
+
+  // Read through each student in the file to find the matching ID
+  while(fread(&s, sizeof(Student), 1, fp)) {
+    if (s.id == searchId) {
+      printf("\nStudent Found:\n");
+      printf("ID: %d\n", s.id);
+      printf("Name: %s\n", s.name);
+      printf("Age: %d\n", s.age);
+      printf("Grade: %s\n", s.grade);
+      found = 1; // Set the flag to indicate student is found
+      break;
+    }
+  }
+
+  if (!found) {
+    printf("Student with ID %d not found.\n", searchId);
+  }
+
+  fclose(fp);
 }
