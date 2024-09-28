@@ -19,6 +19,8 @@ void viewStudents();
 void searchStudent();
 void updateStudent();
 void deleteStudent();
+// function to clear the input buffer
+void clearInputBuffer();
 
 // Main Function
 int main() {
@@ -32,7 +34,7 @@ int main() {
     printf("4. Update Student\n");
     printf("5. Delete Student\n");
     printf("6. Exit\n\n");
-    printf("Enter yout choice: \n");
+    printf("Enter your choice: \n");
     scanf("%d", &choice);
 
     switch (choice) {
@@ -205,6 +207,54 @@ void updateStudent() {
     remove(FILE_NAME);
     rename("temp.dat", FILE_NAME);
     printf("Student record updated successfully!\n");
+  } else {
+    remove("temp.dat");
+    printf("Student with ID %d not found.\n", searchId);
+  }
+}
+
+
+void deleteStudent() {
+  FILE *fp, *tempFp; // fp - for main file, tempFp - for temporary file
+  Student s;
+  int searchId;
+  int found = 0;
+
+  fp = fopen(FILE_NAME, "rb");
+  if (fp == NULL) {
+    printf("No student records found.\n");
+    return;
+  }
+
+  // Open temporary file in write mode to store updated data
+  tempFp = fopen("temp.dat", "wb");
+  if (tempFp == NULL) {
+    printf("Error creating temporary file!\n");
+    fclose(fp);
+    return;
+  }
+
+
+  printf("\n=== Delete Student ===\n");
+  printf("Enter Student ID to delete: \n");
+  scanf("%d", &searchId);
+
+  // Read throuh the original file and copy data to the temporary file
+  while (fread(&s, sizeof(Student), 1, fp)) {
+    if (s.id == searchId) {
+      found = 1;
+      printf("Student with ID %d deleted successfull!\n", s.id);
+    } else {
+      fwrite(&s, sizeof(Student), 1, tempFp); // Write other students to the temporary file
+    }
+  }
+
+  fclose(fp);
+  fclose(tempFp);
+
+  if (found) {
+    remove(FILE_NAME);
+    rename("temp.dat", FILE_NAME);
   } else {
     remove("temp.dat");
     printf("Student with ID %d not found.\n", searchId);
