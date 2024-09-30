@@ -253,6 +253,7 @@ void searchStudent() {
     printf("Student with ID %d not found.\n", searchId);
   }
 
+  freeStudent(s);
   fclose(fp);
 }
 
