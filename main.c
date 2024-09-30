@@ -198,8 +198,7 @@ void viewStudents() {
 
 void searchStudent() {
 
-  FILE *fp;
-  fp = fopen(FILE_NAME, "rb");
+  FILE *fp = fopen(FILE_NAME, "rb");
   if(fp == NULL) {
     printf("No student records found.\n");
     return;
@@ -230,7 +229,7 @@ void searchStudent() {
 
     // Read grade length and grade
     fread(&gradeLen, sizeof(int), 1, fp);
-    &s->grade = (char*)malloc(gradeLen * sizeof(char));
+    s->grade = (char*)malloc(gradeLen * sizeof(char));
     fread(s->grade, sizeof(char), gradeLen, fp);
 
     
@@ -259,24 +258,22 @@ void searchStudent() {
 
 
 void updateStudent() {
-  FILE *fp, *tempFp; // fp - for main file, tempFp - for temporary file
-  Student s;
-  int searchId;
-  int found = 0;
-
-  fp = fopen(FILE_NAME, "rb");
+  // FILE *temp;
+  FILE *fp = fopen(FILE_NAME, "r+b"); // fp - for main file for read and write binary mode
   if (fp == NULL) {
     printf("No student records found.\n");
     return;
   }
 
+  int searchId;
+
   // Open temporary file in write mode to store updated data
-  tempFp = fopen("temp.dat", "wb");
-  if (tempFp == NULL) {
-    printf("Error creating temporary file!\n");
-    fclose(fp);
-    return;
-  }
+  // tempFp = fopen("temp.dat", "wb");
+  // if (tempFp == NULL) {
+  //   printf("Error creating temporary file!\n");
+  //   fclose(fp);
+  //   return;
+  // }
 
 
   printf("\n=== Update Student ===\n");
@@ -284,16 +281,46 @@ void updateStudent() {
   scanf("%d", &searchId);
   clearInputBuffer();
 
-  // Read throuh the original file and copy data to the temporary file
-  while (fread(&s, sizeof(Student), 1, fp)) {
-    if (s.id == searchId) {
 
-      printf("Enter new details for Student ID %d:\n", s.id);
+  Student *s = createStudent();
+  int nameLen, gradeLen;
+  int found = 0;
+  int pos = 0; // To store the position of the record in the file
+
+
+  // Search for the student with the given ID
+  while (1) {
+    pos = ftell(fp); // Get current position in file
+
+    if (fread(&s, sizeof(Student), 1, fp) != 1) break;
+
+    // Read ID and age
+    fread(&s->id, sizeof(int), 1, fp);
+
+    // Read name length and name
+    fread(&nameLen, sizeof(int), 1, fp);
+    s->name = (char*)malloc(nameLen * sizeof(char));
+    fread(s->name, sizeof(char), nameLen, fp);
+
+    // Read grade length and grade
+    fread(&gradeLen, sizeof(int), 1, fp);
+    s->grade = (char*)malloc(gradeLen * sizeof(char));
+    fread(s->grade, sizeof(char), gradeLen, fp);
+
+    if (s->id == searchId) {
+
+      printf("Enter new details for Student ID %d:\n", s->id);
       printf("Enter Name: ");
-      // scanf("%[^\n]", &s.name);
-      fgets(s.name, sizeof(s.name), stdin); // Input name
-      s.name[strcspn(s.name, "\n")] = '\0'; // Remove newline
+      // scanf("%[^\n]", &s->name);
+      // fgets(s.name, sizeof(s.name), stdin); // Input name
+      // s.name[strcspn(s.name, "\n")] = '\0'; // Remove newline
 
+      char tempName[100];
+      fgets(tempName, sizeof(tempName), stdin);
+      tempName[strcspn(tempName, "\n")] = '\0';
+      free(s->name);
+      s->name = strdup(tempName);
+      
       printf("Enter Age: ");
       scanf("%d", &s.age);
       clearInputBuffer();
