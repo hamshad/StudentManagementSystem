@@ -43,21 +43,11 @@ int main() {
     clearInputBuffer();
 
     switch (choice) {
-      case 1:
-        addStudent();
-        break;
-      case 2:
-        viewStudents();
-        break;
-      case 3:
-        searchStudent();
-        break;
-      case 4:
-        updateStudent();
-        break;
-      case 5:
-        deleteStudent();
-        break;
+      case 1: addStudent(); break;
+      case 2: viewStudents(); break;
+      case 3: searchStudent(); break;
+      case 4: updateStudent(); break;
+      case 5: deleteStudent(); break;
       case 6:
         printf("Exiting the program, Goodbye!\n");
         exit(EXIT_FAILURE);
@@ -70,8 +60,8 @@ int main() {
 }
 
 
-void addStudent() {
   // File pointer for file operations
+void addStudent() {
   // Open the file in append mode (to add data without overwriting)
   FILE *fp = fopen(FILE_NAME, "ab");
   if (fp == NULL) {
@@ -92,9 +82,14 @@ void addStudent() {
   // scanf("%[^\n]", &s.name);
   // fgets(s.name, sizeof(s.name), stdin); // Input name
   // s.name[strcspn(s.name, "\n")] = '\0'; // Remove newline
-  s->name = (char *)malloc(100 * sizeof(char)); // Allocate 100 characters for name
-  fgets(s->name, 100, stdin); // Read the name from user
-  s->name[strcspn(s->name, "\n")] = '\0'; // Remove the newline character at the end
+
+  // s->name = (char *)malloc(100 * sizeof(char)); // Allocate 100 characters for name
+  // fgets(s->name, 100, stdin); // Read the name from user
+  // s->name[strcspn(s->name, "\n")] = '\0'; // Remove the newline character at the end
+  char tempName[100]; // Temp buffer for name input
+  fgets(tempName, sizeof(tempName), stdin);
+  tempName[strcspn(tempName, "\n")] = '\0'; // remove newline character
+  s->name = strdup(tempName); // Allocate memory and copy the name
   
   printf("Enter Age: ");
   scanf("%d", &s->age);
@@ -104,17 +99,23 @@ void addStudent() {
   // scanf("%[^\n]", &s.grade);
   // fgets(s.grade, sizeof(s.grade), stdin); // Input grade
   // s.grade[strcspn(s.grade, "\n")] = '\0'; // Remove newline
-  s->grade = (char *)malloc(10 * sizeof(char)); // Allocate 100 characters for grade
-  fgets(s->grade, 10, stdin); // Read the grade from user
-  s->grade[strcspn(s->grade, "\n")] = '\0'; // Remove the newline character at the end
+
+  // s->grade = (char *)malloc(10 * sizeof(char)); // Allocate 100 characters for grade
+  // fgets(s->grade, 10, stdin); // Read the grade from user
+  // s->grade[strcspn(s->grade, "\n")] = '\0'; // Remove the newline character at the end
+  char tempGrade[10]; // Temp buffer for grade input
+  fgets(tempGrade, sizeof(tempGrade), stdin);
+  tempGrade[strcspn(tempGrade, "\n")] = '\0'; // remove newline character
+  s->grade = strdup(tempGrade); // Allocate memory and copy the grade
+
 
 
   // write the student's details to the file
   // fwrite(s, sizeof(Student), 1, fp);
   
   // Write the basic student structure to the file
-  fwrite(&s->id, sizeof(s->id), 1, fp); // Write ID
-  fwrite(&s->age, sizeof(s->age), 1, fp); // Write Age
+  fwrite(&s->id, sizeof(int), 1, fp); // Write ID
+  fwrite(&s->age, sizeof(int), 1, fp); // Write Age
   
   // Write the name and grade (dynamic memory) as separate strings
   int nameLen = strlen(s->name) + 1; // Include null terminator
@@ -146,7 +147,7 @@ void viewStudents() {
     return;
   }
 
-  Student s;
+  Student *s = createStudent();
   int nameLen, gradeLen; // To store the length of name and grade
   // char name[100];
   // char grade[10];
@@ -163,24 +164,24 @@ void viewStudents() {
     // fgets(grade, sizeof(grade), fp);
     
 
-    fread(&s.age, sizeof(s.id), 1, fp); // Read age
+    fread(&s->age, sizeof(int), 1, fp); // Read age
     
     // Read the length of the name and then the name itself
     fread(&nameLen, sizeof(int), 1, fp);
-    s.name = (char *)malloc(nameLen * sizeof(char));
-    fread(s.name, sizeof(char), nameLen, fp);
+    s->name = (char *)malloc(nameLen * sizeof(char));
+    fread(s->name, sizeof(char), nameLen, fp);
 
     // Read the length of the grade and then the grade itself
     fread(&gradeLen, sizeof(int), 1, fp);
-    s.grade = (char *)malloc(gradeLen * sizeof(char));
-    fread(s.grade, sizeof(char), gradeLen, fp);
+    s->grade = (char *)malloc(gradeLen * sizeof(char));
+    fread(s->grade, sizeof(char), gradeLen, fp);
 
     // Print the student details
-    printf("%d\t%-15s\t%d\t%s\n", s.id, s.name, s.age, s.grade);
+    printf("%d\t%-15s\t%d\t%s\n", s->id, s->name, s->age, s->grade);
 
     // Free the dynamically allocated memory for name and grade
-    free(s.name);
-    free(s.grade);
+    free(s->name);
+    free(s->grade);
     // recordCount++; // Increment the count for each valid record
 
   }
@@ -190,22 +191,27 @@ void viewStudents() {
   //   printf("No records to display.\n");
   // }
 
+  freeStudent(s);
   fclose(fp);
 }
 
 
 void searchStudent() {
+
   FILE *fp;
-  Student s;
-  int searchId; // student ID to search for
-  int found = 0; // Flag to indicate whether the student was found
-  
   fp = fopen(FILE_NAME, "rb");
   if(fp == NULL) {
     printf("No student records found.\n");
     return;
   }
 
+  int searchId; // student ID to search for
+  
+
+  Student *s = createStudent();
+  int nameLen, gradeLen;
+  int found = 0; // Flag to indicate whether the student was found
+  
 
   printf("\n=== Search Student ===\n");
   printf("Enter Student ID to search: ");
@@ -213,15 +219,34 @@ void searchStudent() {
 
   // Read through each student in the file to find the matching ID
   while(fread(&s, sizeof(Student), 1, fp)) {
-    if (s.id == searchId) {
+
+    // Read ID and age
+    fread(&s->age, sizeof(int), 1, fp);
+
+    // Read name length and name
+    fread(&nameLen, sizeof(int), 1, fp);
+    s->name = (char*)malloc(nameLen * sizeof(char));
+    fread(s->name, sizeof(char), nameLen, fp);
+
+    // Read grade length and grade
+    fread(&gradeLen, sizeof(int), 1, fp);
+    &s->grade = (char*)malloc(gradeLen * sizeof(char));
+    fread(s->grade, sizeof(char), gradeLen, fp);
+
+    
+    if (s->id == searchId) {
       printf("\nStudent Found:\n");
-      printf("ID: %d\n", s.id);
-      printf("Name: %s\n", s.name);
-      printf("Age: %d\n", s.age);
-      printf("Grade: %s\n", s.grade);
+      printf("ID: %d\n", s->id);
+      printf("Name: %s\n", s->name);
+      printf("Age: %d\n", s->age);
+      printf("Grade: %s\n", s->grade);
       found = 1; // Set the flag to indicate student is found
       break;
     }
+
+    // Free memory allocated
+    free(s->name);
+    free(s->grade);
   }
 
   if (!found) {
@@ -362,6 +387,9 @@ Student* createStudent() {
     exit(EXIT_FAILURE);
   }
 
+  s->name = NULL;
+  s->grade = NULL;
+
   return s;
 }
 
@@ -369,7 +397,9 @@ Student* createStudent() {
 // Function to free the dynamically allocated memory for a student
 // This is important to prevent memroy leaks
 void freeStudent(Student *s) {
-  free(s->name); // Free the memory allocated for the name
-  free(s->grade); // Free the memory allocated for the grade
-  free(s); // Free the memory allocated for the student structure intself
+  if (s != NULL) {
+    free(s->name); // Free the memory allocated for the name
+    free(s->grade); // Free the memory allocated for the grade
+    free(s); // Free the memory allocated for the student structure intself
+  }
 }
