@@ -8,9 +8,9 @@
 // Define the structure for student with relevant fields
 typedef struct {
   int id;
-  char name[50];
+  char *name; // use pointers for name to dynamically allocate
   int age;
-  char grade[5];
+  char *grade; // use pointers for grade to dynamically allocate
 } Student;
 
 // Define function prototypes (functions that will be implemented later)
@@ -21,6 +21,10 @@ void updateStudent();
 void deleteStudent();
 // function to clear the input buffer
 void clearInputBuffer();
+// creates student with dynamic memory allocation
+// and returns Student's pointer
+Student* createStudent();
+void freeStudent(Student *s);
 
 // Main Function
 int main() {
@@ -36,6 +40,7 @@ int main() {
     printf("6. Exit\n\n");
     printf("Enter your choice: \n");
     scanf("%d", &choice);
+    clearInputBuffer();
 
     switch (choice) {
       case 1:
@@ -66,40 +71,65 @@ int main() {
 
 
 void addStudent() {
-  FILE *fp;   // File pointer for file operations
-  Student s;  // Variable of type Student to hold the students's information
-  
-
+  // File pointer for file operations
   // Open the file in append mode (to add data without overwriting)
-  fp = fopen(FILE_NAME, "ab");
+  FILE *fp = fopen(FILE_NAME, "ab");
   if (fp == NULL) {
     printf("Error opening file!\n");
     return;
   }
 
+  // Dynamically allocate memory for new student
+  Student *s = createStudent();
 
   // Collect student details from the user
   printf("\n=== Add New Student ===\n");
   printf("Enter ID: ");
-  scanf("%d", &s.id);
+  scanf("%d", &s->id);
   clearInputBuffer();
 
   printf("Enter Name: ");
   // scanf("%[^\n]", &s.name);
-  fgets(s.name, sizeof(s.name), stdin); // Input name
-  s.name[strcspn(s.name, "\n")] = '\0'; // Remove newline
+  // fgets(s.name, sizeof(s.name), stdin); // Input name
+  // s.name[strcspn(s.name, "\n")] = '\0'; // Remove newline
+  s->name = (char *)malloc(100 * sizeof(char)); // Allocate 100 characters for name
+  fgets(s->name, 100, stdin); // Read the name from user
+  s->name[strcspn(s->name, "\n")] = '\0'; // Remove the newline character at the end
   
   printf("Enter Age: ");
-  scanf("%d", &s.age);
+  scanf("%d", &s->age);
   clearInputBuffer();
 
   printf("Enter Grade: ");
   // scanf("%[^\n]", &s.grade);
-  fgets(s.grade, sizeof(s.grade), stdin); // Input name
-  s.grade[strcspn(s.grade, "\n")] = '\0'; // Remove newline
+  // fgets(s.grade, sizeof(s.grade), stdin); // Input grade
+  // s.grade[strcspn(s.grade, "\n")] = '\0'; // Remove newline
+  s->grade = (char *)malloc(10 * sizeof(char)); // Allocate 100 characters for grade
+  fgets(s->grade, 10, stdin); // Read the grade from user
+  s->grade[strcspn(s->grade, "\n")] = '\0'; // Remove the newline character at the end
 
 
-  fwrite(&s, sizeof(Student), 1, fp);
+  // write the student's details to the file
+  // fwrite(s, sizeof(Student), 1, fp);
+  
+  // Write the basic student structure to the file
+  fwrite(&s->id, sizeof(s->id), 1, fp); // Write ID
+  fwrite(&s->age, sizeof(s->age), 1, fp); // Write Age
+  
+  // Write the name and grade (dynamic memory) as separate strings
+  int nameLen = strlen(s->name) + 1; // Include null terminator
+  fwrite(&nameLen, sizeof(int), 1, fp); // Write the length of the name
+  fwrite(s->name, sizeof(char), nameLen, fp); // Write the name
+  
+  int gradeLen = strlen(s->grade) + 1; // Include null terminator
+  fwrite(&gradeLen, sizeof(int), 1, fp); // Write the length of the grade
+  fwrite(s->grade, sizeof(char), gradeLen, fp); // Write the grade
+
+  // Free the dynamically allocated memory after writing to the file
+  freeStudent(s);
+
+
+  // Close the file
   fclose(fp);
 
   printf("Student added successfully!\n");
@@ -107,31 +137,58 @@ void addStudent() {
 
 
 void viewStudents() {
-  FILE *fp;
-  Student s;
-  int recordCount = 0; // To count how many records are being read
+  // int recordCount = 0; // To count how many records are being read
 
   // Open the file in read mode
-  fp = fopen(FILE_NAME, "rb");
+  FILE *fp = fopen(FILE_NAME, "rb");
   if (fp == NULL) {
     printf("No student records found.\n");
     return;
   }
+
+  Student s;
+  int nameLen, gradeLen; // To store the length of name and grade
+  // char name[100];
+  // char grade[10];
 
   printf("\n--- List of Students ---\n");
   printf("ID\tName\t\tAge\tGrade\n");
   printf("----------------------------------------\n");
 
   // Read and display student's details one by one from the file
-  while(fread(&s, sizeof(Student), 1, fp) == 1) {
+  // while(fread(&s, sizeof(Student), 1, fp) == 1) {
+  while(fread(&s, sizeof(Student), 1, fp)) {
+    // Read name and grade (store as separate lines in the file)
+    // fgets(name, sizeof(name), fp);
+    // fgets(grade, sizeof(grade), fp);
+    
+
+    fread(&s.age, sizeof(s.id), 1, fp); // Read age
+    
+    // Read the length of the name and then the name itself
+    fread(&nameLen, sizeof(int), 1, fp);
+    s.name = (char *)malloc(nameLen * sizeof(char));
+    fread(s.name, sizeof(char), nameLen, fp);
+
+    // Read the length of the grade and then the grade itself
+    fread(&gradeLen, sizeof(int), 1, fp);
+    s.grade = (char *)malloc(gradeLen * sizeof(char));
+    fread(s.grade, sizeof(char), gradeLen, fp);
+
+    // Print the student details
     printf("%d\t%-15s\t%d\t%s\n", s.id, s.name, s.age, s.grade);
-    recordCount++; // Increment the count for each valid record
+
+    // Free the dynamically allocated memory for name and grade
+    free(s.name);
+    free(s.grade);
+    // recordCount++; // Increment the count for each valid record
+
   }
 
 
-  if (recordCount == 0) {
-    printf("No records to display.\n");
-  }
+  // if (recordCount == 0) {
+  //   printf("No records to display.\n");
+  // }
 
   fclose(fp);
 }
@@ -220,8 +277,9 @@ void updateStudent() {
       fgets(s.grade, sizeof(s.grade), stdin); // Input name
       s.grade[strcspn(s.grade, "\n")] = '\0'; // Remove newline
       
-      found = 1;
+      found = 1; // Mark as found
     }
+
     fwrite(&s, sizeof(Student), 1, tempFp); // Write each student (updated of not)
   }
 
@@ -291,4 +349,27 @@ void clearInputBuffer() {
   int c;
   // consume all characters until a newline
   while ((c = getchar()) != '\n' && c != EOF);
+}
+
+
+// Function to dynamically allocate memory for a new student
+// It returns a pointer to the newly allocated Student
+Student* createStudent() {
+  // Allocate memory for a new Student and check if allocation was successfully
+  Student *s = (Student *)malloc(sizeof(Student));
+  if (s == NULL) {
+    printf("Memory allocation failed!\n");
+    exit(EXIT_FAILURE);
+  }
+
+  return s;
+}
+
+
+// Function to free the dynamically allocated memory for a student
+// This is important to prevent memroy leaks
+void freeStudent(Student *s) {
+  free(s->name); // Free the memory allocated for the name
+  free(s->grade); // Free the memory allocated for the grade
+  free(s); // Free the memory allocated for the student structure intself
 }
