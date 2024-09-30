@@ -199,6 +199,7 @@ void updateStudent() {
   printf("\n=== Update Student ===\n");
   printf("Enter Student ID to update: \n");
   scanf("%d", &searchId);
+  clearInputBuffer();
 
   // Read throuh the original file and copy data to the temporary file
   while (fread(&s, sizeof(Student), 1, fp)) {
