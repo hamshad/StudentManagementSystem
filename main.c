@@ -147,7 +147,8 @@ void viewStudents() {
     return;
   }
 
-  Student *s = createStudent();
+  //  Use a stack-allocated structure instead of a pointer
+  Student s = {0};
   int nameLen, gradeLen; // To store the length of name and grade
   // char name[100];
   // char grade[10];
@@ -158,30 +159,48 @@ void viewStudents() {
 
   // Read and display student's details one by one from the file
   // while(fread(&s, sizeof(Student), 1, fp) == 1) {
-  while(fread(&s->id, sizeof(int), 1, fp)) {
+  while(fread(&s.id, sizeof(int), 1, fp)) {
     // Read name and grade (store as separate lines in the file)
     // fgets(name, sizeof(name), fp);
     // fgets(grade, sizeof(grade), fp);
     
 
-    fread(&s->age, sizeof(int), 1, fp); // Read age
-    
+    // Read age
+    if (fread(&s.age, sizeof(int), 1, fp) != 1) break;    
+
     // Read the length of the name and then the name itself
-    fread(&nameLen, sizeof(int), 1, fp);
-    s->name = (char *)malloc(nameLen * sizeof(char));
-    fread(s->name, sizeof(char), nameLen, fp);
+    if (fread(&nameLen, sizeof(int), 1, fp) != 1) break;
+    char *name = (char *)malloc(nameLen * sizeof(char));
+    if (name == NULL) {
+      printf("Memory allocation failed!\n");
+      fclose(fp);
+      return;
+    }
+    if (fread(name, sizeof(char), nameLen, fp) != nameLen) {
+      free(name);
+      break;
+    }
 
     // Read the length of the grade and then the grade itself
-    fread(&gradeLen, sizeof(int), 1, fp);
-    s->grade = (char *)malloc(gradeLen * sizeof(char));
-    fread(s->grade, sizeof(char), gradeLen, fp);
+    if (fread(&gradeLen, sizeof(int), 1, fp) != 1) break;
+    char *grade = (char *)malloc(gradeLen * sizeof(char));
+    if (grade == NULL) {
+      printf("Memory allocation failed!\n");
+      fclose(fp);
+      return;
+    }
+    if (fread(grade, sizeof(char), gradeLen, fp) != gradeLen) {
+      free(name);
+      free(grade);
+      break;
+    }
 
     // Print the student details
-    printf("%d\t%-15s\t%d\t%s\n", s->id, s->name, s->age, s->grade);
+    printf("%d\t%-15s\t%d\t%s\n", s.id, name, s.age, grade);
 
     // Free the dynamically allocated memory for name and grade
-    free(s->name);
-    free(s->grade);
+    free(name);
+    free(grade);
     // recordCount++; // Increment the count for each valid record
 
   }
@@ -191,7 +210,7 @@ void viewStudents() {
   //   printf("No records to display.\n");
   // }
 
-  freeStudent(s);
+  // freeStudent(s);
   fclose(fp);
 }
 
@@ -282,7 +301,7 @@ void updateStudent() {
   clearInputBuffer();
 
 
-  Student *s = createStudent();
+  Student s = {0};
   int nameLen, gradeLen;
   int found = 0;
   int pos = 0; // To store the position of the record in the file
@@ -292,24 +311,44 @@ void updateStudent() {
   while (1) {
     pos = ftell(fp); // Get current position in file
 
-    if (fread(&s->id, sizeof(int), 1, fp) != 1) break;
+    if (fread(&s.id, sizeof(int), 1, fp) != 1) break;
 
-    // Read ID and age
-    fread(&s->id, sizeof(int), 1, fp);
+    // Read age
+    fread(&s.age, sizeof(int), 1, fp);
 
     // Read name length and name
-    fread(&nameLen, sizeof(int), 1, fp);
-    s->name = (char*)malloc(nameLen * sizeof(char));
-    fread(s->name, sizeof(char), nameLen, fp);
+    if (fread(&nameLen, sizeof(int), 1, fp) != 1) break;
+    char *name = (char*)malloc(nameLen * sizeof(char));
+    if (name == NULL) {
+      printf("Memory allocation failed!\n");
+      fclose(fp);
+      return;
+    }
+    if (fread(name, sizeof(char), nameLen, fp) != nameLen) {
+      free(name);
+      break;
+    }
 
     // Read grade length and grade
-    fread(&gradeLen, sizeof(int), 1, fp);
-    s->grade = (char*)malloc(gradeLen * sizeof(char));
-    fread(s->grade, sizeof(char), gradeLen, fp);
+    if (fread(&gradeLen, sizeof(int), 1, fp) != 1) {
+      free(name);
+      break;
+    }
+    char *grade = (char*)malloc(gradeLen * sizeof(char));
+    if (grade == NULL) {
+      printf("Memory allocation failed!\n");
+      fclose(fp);
+      return;
+    }
+    if (fread(grade, sizeof(char), gradeLen, fp) != gradeLen) {
+      free(name);
+      free(grade);
+      break;
+    }
 
-    if (s->id == searchId) {
+    if (s.id == searchId) {
 
-      printf("Enter new details for Student ID %d:\n", s->id);
+      printf("Enter new details for Student ID %d:\n", s.id);
       printf("Enter Name: ");
       // scanf("%[^\n]", &s->name);
       // fgets(s.name, sizeof(s.name), stdin); // Input name
@@ -318,11 +357,9 @@ void updateStudent() {
       char tempName[100];
       fgets(tempName, sizeof(tempName), stdin);
       tempName[strcspn(tempName, "\n")] = '\0';
-      free(s->name);
-      s->name = strdup(tempName);
       
       printf("Enter Age: ");
-      scanf("%d", &s->age);
+      scanf("%d", &s.age);
       clearInputBuffer();
 
       printf("Enter Grade: ");
@@ -333,34 +370,34 @@ void updateStudent() {
       char tempGrade[10];
       fgets(tempGrade, sizeof(tempGrade), stdin);
       tempGrade[strcspn(tempGrade, "\n")] = '\0';
-      free(s->grade);
-      s->grade = strdup(tempGrade);
       
       // Move file pointer back to the start of this record
       fseek(fp, pos, SEEK_SET);
 
       // Write updated information to file
-      fwrite(&s->id, sizeof(int), 1, fp);
-      fwrite(&s->age, sizeof(int), 1, fp);
+      fwrite(&s.id, sizeof(int), 1, fp);
+      fwrite(&s.age, sizeof(int), 1, fp);
 
-      nameLen = strlen(s->name) + 1;
+      nameLen = strlen(tempName) + 1;
       fwrite(&nameLen, sizeof(int), 1, fp);
-      fwrite(s->name, sizeof(char), nameLen, fp);
+      fwrite(tempName, sizeof(char), nameLen, fp);
 
-      gradeLen = strlen(s->grade) + 1;
+      gradeLen = strlen(tempGrade) + 1;
       fwrite(&gradeLen, sizeof(int), 1, fp);
-      fwrite(s->grade, sizeof(char), gradeLen, fp);
+      fwrite(tempGrade, sizeof(char), gradeLen, fp);
 
       found = 1; // Mark as found
       break;
     }
 
     // fwrite(&s, sizeof(Student), 1, tempFp); // Write each student (updated of not)
-    free(s->name);
-    free(s->grade);
+    free(name);
+    free(grade);
+
+    if (found) break;
   }
 
-  freeStudent(s);
+  // freeStudent(s);
   fclose(fp);
   // fclose(tempFp);
 
@@ -385,7 +422,7 @@ void deleteStudent() {
   }
 
   // Open temporary file in write mode to store updated data
-  tempFp = fopen("temp.dat", "wb");
+  tempFp = fopen("temp.bin", "wb");
   if (tempFp == NULL) {
     printf("Error creating temporary file!\n");
     fclose(fp);
@@ -399,60 +436,84 @@ void deleteStudent() {
   scanf("%d", &searchId);
 
 
-  Student *s = createStudent();
+  Student s = {0};
   int nameLen, gradeLen;
   int found = 0;
 
   // Read throuh the original file and copy data to the temporary file
-  while (fread(&s->id, sizeof(int), 1, fp)) {
+  while (fread(&s.id, sizeof(int), 1, fp)) {
     
-    // Read Id and age
-    fread(&s->age, sizeof(int), 1, fp);
+    // Read Age
+    if (fread(&s.age, sizeof(int), 1, fp) != 1) break;
 
     // Read name length and name
-    fread(&nameLen, sizeof(int), 1, fp);
-    s->name = (char*)malloc(nameLen * sizeof(char));
-    fread(s->name, sizeof(char), nameLen, fp);
+    if (fread(&nameLen, sizeof(int), 1, fp) != 1) break;
+    char *name = (char*)malloc(nameLen * sizeof(char));
+    if (name == NULL) {
+      printf("Memory allocation failed!\n");
+      fclose(fp);
+      fclose(tempFp);
+      remove("temp.bin");
+      return;
+    }
+    if (fread(name, sizeof(char), nameLen, fp) != nameLen) {
+      free(name);
+      break;
+    }
 
     // Read name length and name
-    fread(&gradeLen, sizeof(int), 1, fp);
-    s->grade = (char*)malloc(gradeLen * sizeof(char));
-    fread(s->grade, sizeof(char), gradeLen, fp);
+    if (fread(&gradeLen, sizeof(int), 1, fp) != 1) {
+      free(name);
+      break;
+    }
+    char *grade = (char*)malloc(gradeLen * sizeof(char));
+    if (grade == NULL) {
+      printf("Memory allocation failed!\n");
+      fclose(fp);
+      fclose(tempFp);
+      remove("temp.bin");
+      return;
+    }
+    if (fread(grade, sizeof(char), gradeLen, fp) != gradeLen) {
+      free(name);
+      free(grade);
+      break;
+    }
 
-    if (s->id == searchId) {
+    if (s.id == searchId) {
       found = 1;
-      printf("Student with ID %d deleted successfull!\n", s->id);
     } else {
       // fwrite(&s, sizeof(Student), 1, tempFp); // Write other students to the temporary file
       
 
       // Write this record to temporary file
-      fwrite(&s->id, sizeof(int), 1, tempFp);
-      fwrite(&s->age, sizeof(int), 1, tempFp);
+      fwrite(&s.id, sizeof(int), 1, tempFp);
+      fwrite(&s.age, sizeof(int), 1, tempFp);
 
-      nameLen = strlen(s->name) + 1;
+      // nameLen = strlen(s->name) + 1;
       fwrite(&nameLen, sizeof(int), 1, tempFp);
-      fwrite(s->name, sizeof(char), nameLen, tempFp);
+      fwrite(name, sizeof(char), nameLen, tempFp);
 
-      gradeLen = strlen(s->grade) + 1;
+      // gradeLen = strlen(s->grade) + 1;
       fwrite(&gradeLen, sizeof(int), 1, tempFp);
-      fwrite(s->grade, sizeof(char), gradeLen, tempFp);
+      fwrite(grade, sizeof(char), gradeLen, tempFp);
     }
 
     // Free memory allocated
-    free(s->name);
-    free(s->grade);
+    free(name);
+    free(grade);
   }
 
-  freeStudent(s);
+  // freeStudent(s);
   fclose(fp);
   fclose(tempFp);
 
   if (found) {
     remove(FILE_NAME);
-    rename("temp.dat", FILE_NAME);
+    rename("temp.bin", FILE_NAME);
+    printf("Student with ID %d deleted successfull!\n", s.id);
   } else {
-    remove("temp.dat");
+    remove("temp.bin");
     printf("Student with ID %d not found.\n", searchId);
   }
 }
