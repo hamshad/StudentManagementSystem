@@ -158,7 +158,7 @@ void viewStudents() {
 
   // Read and display student's details one by one from the file
   // while(fread(&s, sizeof(Student), 1, fp) == 1) {
-  while(fread(&s, sizeof(Student), 1, fp)) {
+  while(fread(&s->id, sizeof(int), 1, fp)) {
     // Read name and grade (store as separate lines in the file)
     // fgets(name, sizeof(name), fp);
     // fgets(grade, sizeof(grade), fp);
@@ -217,7 +217,7 @@ void searchStudent() {
   scanf("%d", &searchId);
 
   // Read through each student in the file to find the matching ID
-  while(fread(&s, sizeof(Student), 1, fp)) {
+  while(fread(&s->id, sizeof(int), 1, fp)) {
 
     // Read ID and age
     fread(&s->age, sizeof(int), 1, fp);
@@ -292,7 +292,7 @@ void updateStudent() {
   while (1) {
     pos = ftell(fp); // Get current position in file
 
-    if (fread(&s, sizeof(Student), 1, fp) != 1) break;
+    if (fread(&s->id, sizeof(int), 1, fp) != 1) break;
 
     // Read ID and age
     fread(&s->id, sizeof(int), 1, fp);
@@ -322,29 +322,54 @@ void updateStudent() {
       s->name = strdup(tempName);
       
       printf("Enter Age: ");
-      scanf("%d", &s.age);
+      scanf("%d", &s->age);
       clearInputBuffer();
 
       printf("Enter Grade: ");
       // scanf("%[^\n]", &s.grade);
-      fgets(s.grade, sizeof(s.grade), stdin); // Input name
-      s.grade[strcspn(s.grade, "\n")] = '\0'; // Remove newline
+      // fgets(s.grade, sizeof(s.grade), stdin); // Input name
+      // s.grade[strcspn(s.grade, "\n")] = '\0'; // Remove newline
       
+      char tempGrade[10];
+      fgets(tempGrade, sizeof(tempGrade), stdin);
+      tempGrade[strcspn(tempGrade, "\n")] = '\0';
+      free(s->grade);
+      s->grade = strdup(tempGrade);
+      
+      // Move file pointer back to the start of this record
+      fseek(fp, pos, SEEK_SET);
+
+      // Write updated information to file
+      fwrite(&s->id, sizeof(int), 1, fp);
+      fwrite(&s->age, sizeof(int), 1, fp);
+
+      nameLen = strlen(s->name) + 1;
+      fwrite(&nameLen, sizeof(int), 1, fp);
+      fwrite(s->name, sizeof(char), nameLen, fp);
+
+      gradeLen = strlen(s->grade) + 1;
+      fwrite(&gradeLen, sizeof(int), 1, fp);
+      fwrite(s->grade, sizeof(char), gradeLen, fp);
+
       found = 1; // Mark as found
+      break;
     }
 
-    fwrite(&s, sizeof(Student), 1, tempFp); // Write each student (updated of not)
+    // fwrite(&s, sizeof(Student), 1, tempFp); // Write each student (updated of not)
+    free(s->name);
+    free(s->grade);
   }
 
+  freeStudent(s);
   fclose(fp);
-  fclose(tempFp);
+  // fclose(tempFp);
 
   if (found) {
-    remove(FILE_NAME);
-    rename("temp.dat", FILE_NAME);
+    // remove(FILE_NAME);
+    // rename("temp.dat", FILE_NAME);
     printf("Student record updated successfully!\n");
   } else {
-    remove("temp.dat");
+    // remove("temp.dat");
     printf("Student with ID %d not found.\n", searchId);
   }
 }
@@ -352,9 +377,6 @@ void updateStudent() {
 
 void deleteStudent() {
   FILE *fp, *tempFp; // fp - for main file, tempFp - for temporary file
-  Student s;
-  int searchId;
-  int found = 0;
 
   fp = fopen(FILE_NAME, "rb");
   if (fp == NULL) {
@@ -371,20 +393,58 @@ void deleteStudent() {
   }
 
 
+  int searchId;
   printf("\n=== Delete Student ===\n");
   printf("Enter Student ID to delete: \n");
   scanf("%d", &searchId);
 
+
+  Student *s = createStudent();
+  int nameLen, gradeLen;
+  int found = 0;
+
   // Read throuh the original file and copy data to the temporary file
-  while (fread(&s, sizeof(Student), 1, fp)) {
-    if (s.id == searchId) {
+  while (fread(&s->id, sizeof(int), 1, fp)) {
+    
+    // Read Id and age
+    fread(&s->age, sizeof(int), 1, fp);
+
+    // Read name length and name
+    fread(&nameLen, sizeof(int), 1, fp);
+    s->name = (char*)malloc(nameLen * sizeof(char));
+    fread(s->name, sizeof(char), nameLen, fp);
+
+    // Read name length and name
+    fread(&gradeLen, sizeof(int), 1, fp);
+    s->grade = (char*)malloc(gradeLen * sizeof(char));
+    fread(s->grade, sizeof(char), gradeLen, fp);
+
+    if (s->id == searchId) {
       found = 1;
-      printf("Student with ID %d deleted successfull!\n", s.id);
+      printf("Student with ID %d deleted successfull!\n", s->id);
     } else {
-      fwrite(&s, sizeof(Student), 1, tempFp); // Write other students to the temporary file
+      // fwrite(&s, sizeof(Student), 1, tempFp); // Write other students to the temporary file
+      
+
+      // Write this record to temporary file
+      fwrite(&s->id, sizeof(int), 1, tempFp);
+      fwrite(&s->age, sizeof(int), 1, tempFp);
+
+      nameLen = strlen(s->name) + 1;
+      fwrite(&nameLen, sizeof(int), 1, tempFp);
+      fwrite(s->name, sizeof(char), nameLen, tempFp);
+
+      gradeLen = strlen(s->grade) + 1;
+      fwrite(&gradeLen, sizeof(int), 1, tempFp);
+      fwrite(s->grade, sizeof(char), gradeLen, tempFp);
     }
+
+    // Free memory allocated
+    free(s->name);
+    free(s->grade);
   }
 
+  freeStudent(s);
   fclose(fp);
   fclose(tempFp);
 
